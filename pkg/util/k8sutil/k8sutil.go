@@ -116,6 +116,28 @@ func IsPodActive(p *v1.Pod) bool {
 		p.DeletionTimestamp == nil
 }
 
+// FilterRunningPods returns pods which are running.
+func FilterRunningPods(pods []*v1.Pod) []*v1.Pod {
+	var result []*v1.Pod
+	for _, p := range pods {
+		if IsPodRunning(p) {
+			result = append(result, p)
+		} else {
+			ts := p.DeletionTimestamp
+			if ts == nil {
+				ts = &metav1.Time{}
+			}
+			log.Infof("Ignoring inactive pod %v/%v in state %v, deletion time %v",
+				p.Namespace, p.Name, p.Status.Phase, ts)
+		}
+	}
+	return result
+}
+
+func IsPodRunning(p *v1.Pod) bool {
+	return v1.PodRunning == p.Status.Phase
+}
+
 // filterPodCount returns pods based on their phase.
 func FilterPodCount(pods []*v1.Pod, phase v1.PodPhase) int32 {
 	var result int32
